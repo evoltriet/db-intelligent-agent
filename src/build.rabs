@@ -1,0 +1,42 @@
+LUA_VERSION := "4.2.5"
+ECLIPSE_VERSION := "7.0_44"
+
+var LUA_LIB := file("lib/liblua.a") => fun() do
+	file("lua"):rmdir:mkdir:chdir
+	execute('wget -nv https://www.lua.org/ftp/lua-5.3.5.tar.gz -O- | tar xzP --strip-components=1')
+	if PLATFORM = "Linux" then
+		execute("make linux")
+	elseif PLATFORM = "Darwin" then
+		execute("make macosx")
+	end
+	execute('make install INSTALL_TOP={BUILDDIR}')
+end
+
+var ECLIPSE_LIB
+if PLATFORM = "Linux" then
+	ECLIPSE_LIB := file("eclipse/x86_64_linux/libeclipse.a") => fun() do
+		file("eclipse"):rmdir:mkdir:chdir
+		execute('wget -nv http://eclipseclp.org/Distribution/Builds/{ECLIPSE_VERSION}/x86_64_linux/eclipse_basic.tgz -O- | tar xzP --strip-components=1')
+		execute("make -f Makefile.x64_linux clean")
+		execute("make -f Makefile.x64_linux TARGET_LIBS=\"static\"")
+		execute("make -f Makefile.x64_linux install")
+	end
+elseif PLATFORM = "Darwin" then
+	ECLIPSE_LIB := file("eclipse/x86_64_linux/libeclipse.a") => fun() do
+		file("eclipse"):rmdir:mkdir:chdir
+		execute('wget -nv http://eclipseclp.org/Distribution/Builds/{ECLIPSE_VERSION}/x86_64_linux/eclipse_basic.tgz -O- | tar xzP --strip-components=1')
+		execute("make -f Makefile.x64_linux clean")
+		execute("make -f Makefile.x64_linux TARGET_LIBS=\"static\"")
+		execute("make -f Makefile.x64_linux install")
+	end
+end
+
+LIB := file("lib")
+CFLAGS := old + ['-I{file("include")}']
+CPPFLAGS := old + ['-I{file("include")}']
+LDFLAGS := old + ['-pthread', '-L{file("lib")}']
+PREBUILDS := old + [LUA_LIB, ECLIPSE_LIB]
+
+c_program(BIN_DIR / "BlockingDetect", [
+	file("BlockingDetect.o")
+])

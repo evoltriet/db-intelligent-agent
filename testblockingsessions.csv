@@ -1,0 +1,7 @@
+BLOCKING_SID,SQL_ID,BLOCKED_SID,BLOCKED_USERNAME,BLOCKED_MACHINE
+16267,3s5fu62dq4fzd,2590,user22,machine22
+16267,3s5fu62dq4fzd,2591,user33,machine33
+16267,3s5fu62dq4fzd,2592,user44,machine44
+12560,4wkz2vgjm4y2b,13438,user55,machine55
+12560,4wkz2vgjm4y2b,13438,user55,machine55
+12560,4wkz2vgjm4y2b,12562,user66,machine66

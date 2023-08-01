@@ -1,0 +1,11 @@
+local _M = {}
+
+_M.database = {
+    DNS = <Put DNS name here in double quotes. Please use ODBC driver when configuring your DNS. Example odbc.ini file configurations:
+    		Driver = Oracle 12c ODBC driver
+    		ServerName = server123.com>,
+    username = <Put username here in double quotes>,
+    password = <Put password here in double quotes>,
+}
+
+return _M

@@ -1,0 +1,109 @@
+-- ROOT --
+
+PLATFORM := defined("PLATFORM") or shell("uname"):trim
+OS := defined("OS")
+DEBUG := defined("DEBUG")
+
+LIBCFLAGS := []
+LIBCXXFLAGS := []
+LIBLDFLAGS := []
+
+CFLAGS := ['-g']
+CPPFLAGS := ['-g']
+LDFLAGS := ['-g']
+PREBUILDS := []
+
+if not DEBUG then
+	CFLAGS := old + ['-O2']
+	CPPFLAGS := old + ['-O2']
+end
+
+pkgconfig := fun(Args) do
+	expr('pkg-config {Args}') => fun() shell("pkg-config", Args):trim
+end
+
+c_compile := fun(Object) do
+	var Source := Object % "c"
+	execute('gcc -c {CFLAGS} -o{Object} {Source}')
+end
+
+c_includes := fun(Target) do
+	var Files := []
+	var Lines := shell('gcc -c {CFLAGS} -M -MG {Target:source}')
+	var Files := Lines:trim:replace(r"\\\n ", "") / r"[^\\]( )"
+	Files:pop
+	for File in Files do
+		File := file(File:replace(r"\\ ", " "))
+	end
+	return Files
+end
+
+cpp_compile := fun(Object) do
+	var Source := Object % "cpp"
+	execute('g++ -c {CPPFLAGS} -o{Object} {Source}')
+end
+
+cpp_includes := fun(Target) do
+	var Files := []
+	var Lines := shell('g++ -c {CPPFLAGS} -M -MG {Target:source}')
+	var Files := Lines:trim:replace(r"\\\n ", "") / r"[^\\]( )"
+	Files:pop
+	for File in Files do
+		File := file(File:replace(r"\\ ", " "))
+	end
+	return Files
+end
+
+SourceTypes := {
+	"c" is [c_includes, c_compile],
+	"cpp" is [cpp_includes, cpp_compile]
+}
+
+c_program := fun(Executable, Objects, Libraries) do
+	Objects := Objects or []
+	Libraries := Libraries or []
+	var Sources := []
+	for Object in Objects do
+		for Extension, Functions in SourceTypes do
+			var Source := Object % Extension
+			if Source:exists then
+				Sources:put(Source)
+				var Scan := Source:scan("INCLUDES", :true)[PREBUILDS] => Functions[1]
+				Object[Source, Scan] => Functions[2]
+				exit
+			end
+		end
+	end
+	Executable[Objects, Libraries] => fun(Executable) do
+		execute('gcc', '-o', Executable, Objects, Libraries, LDFLAGS)
+		DEBUG or execute('strip', Executable)
+	end
+	DEFAULT[Executable]
+end
+
+cpp_program := fun(Executable, Objects, Libraries) do
+	Objects := Objects or []
+	Libraries := Libraries or []
+	var Sources := []
+	for Object in Objects do
+		for Extension, Functions in SourceTypes do
+			var Source := Object % Extension
+			if Source:exists then
+				Sources:put(Source)
+				var Scan := Source:scan("INCLUDES", :true)[PREBUILDS] => Functions[1]
+				Object[Source, Scan] => Functions[2]
+				exit
+			end
+		end
+	end
+	Executable[Objects, Libraries] => fun(Executable) do
+		execute('g++', '-o', Executable, Objects, Libraries, LDFLAGS)
+		DEBUG or execute('strip', Executable)
+	end
+	DEFAULT[Executable]
+end
+
+BIN_DIR := file("bin"):mkdir
+
+vmount("obj", "src")
+subdir("obj")
